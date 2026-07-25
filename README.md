@@ -25,8 +25,9 @@ npm install
 npm run dev
 ```
 
-The app runs at `http://localhost:3000`. If AutoReach is unavailable or not
-configured, the interface clearly switches to read-only demo data.
+The app runs at `http://localhost:3000`. AutoReach is a required production
+dependency: if it is unavailable or not configured, the interface shows a
+blocking operational error and never substitutes fabricated data.
 
 ## Supported operations
 
