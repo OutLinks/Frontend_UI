@@ -22,19 +22,33 @@ const ALLOWED_POST = [
 type RouteContext = { params: Promise<{ path: string[] }> };
 
 async function proxy(request: NextRequest, context: RouteContext, method: "GET" | "POST") {
-  const baseUrl = (process.env.AUTOREACH_API_URL || "http://localhost:8000").replace(/\/$/, "");
+  const configuredBaseUrl = process.env.AUTOREACH_API_URL;
   const secret = process.env.AUTOREACH_API_SECRET;
-  if (!secret) {
+  if (!configuredBaseUrl || !secret) {
     return NextResponse.json(
-      { detail: "AutoReach is not configured. Set AUTOREACH_API_SECRET in the Next.js server environment." },
+      { detail: "AutoReach server configuration is incomplete." },
       { status: 503 },
     );
+  }
+
+  let baseUrl: string;
+  try {
+    const parsedUrl = new URL(configuredBaseUrl);
+    if (!["http:", "https:"].includes(parsedUrl.protocol)) throw new Error("Unsupported protocol");
+    baseUrl = parsedUrl.toString().replace(/\/$/, "");
+  } catch {
+    return NextResponse.json({ detail: "AutoReach server configuration is invalid." }, { status: 500 });
   }
 
   const { path } = await context.params;
   const cleanPath = path.join("/");
   const allowed = (method === "GET" ? ALLOWED_GET : ALLOWED_POST).some((pattern) => pattern.test(cleanPath));
   if (!allowed) return NextResponse.json({ detail: "This AutoReach operation is not exposed to the browser." }, { status: 404 });
+
+  const requestBody = method === "POST" ? await request.text() : undefined;
+  if (requestBody && requestBody.length > 25_000) {
+    return NextResponse.json({ detail: "Request body is too large." }, { status: 413 });
+  }
 
   const upstreamUrl = `${baseUrl}/${cleanPath}${request.nextUrl.search}`;
   try {
@@ -45,7 +59,7 @@ async function proxy(request: NextRequest, context: RouteContext, method: "GET" 
         Authorization: `Bearer ${secret}`,
         ...(method === "POST" ? { "Content-Type": "application/json" } : {}),
       },
-      body: method === "POST" ? await request.text() || undefined : undefined,
+      body: requestBody || undefined,
       cache: "no-store",
       signal: AbortSignal.timeout(30_000),
     });
@@ -54,9 +68,8 @@ async function proxy(request: NextRequest, context: RouteContext, method: "GET" 
       status: upstream.status,
       headers: { "Content-Type": upstream.headers.get("content-type") || "application/json" },
     });
-  } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown connection error";
-    return NextResponse.json({ detail: `Unable to reach the AutoReach API: ${message}` }, { status: 502 });
+  } catch {
+    return NextResponse.json({ detail: "Unable to reach the AutoReach API." }, { status: 502 });
   }
 }
 
