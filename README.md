@@ -42,3 +42,9 @@ blocking operational error and never substitutes fabricated data.
 The sender-event endpoint is intentionally not exposed to the browser. Provider
 webhooks must be signature-verified by a trusted server adapter before reaching
 AutoReach.
+
+## Production deployment
+
+The repository includes a GitHub Actions pipeline for standalone Next.js
+deployment behind Nginx with systemd, atomic releases, health checks, and
+automatic rollback. See [DEPLOYMENT.md](DEPLOYMENT.md).

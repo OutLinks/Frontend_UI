@@ -1,0 +1,26 @@
+[Unit]
+Description=OutboundOS Next.js application
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=outboundos
+Group=outboundos
+WorkingDirectory=/srv/outboundos/current
+Environment=NODE_ENV=production
+Environment=HOSTNAME=127.0.0.1
+Environment=PORT=3000
+EnvironmentFile=/etc/outboundos/outboundos.env
+ExecStart=/usr/bin/node server.js
+Restart=on-failure
+RestartSec=5
+TimeoutStopSec=15
+KillSignal=SIGTERM
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+
+[Install]
+WantedBy=multi-user.target
