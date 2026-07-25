@@ -67,4 +67,3 @@ export function GET(request: NextRequest, context: RouteContext) {
 export function POST(request: NextRequest, context: RouteContext) {
   return proxy(request, context, "POST");
 }
-

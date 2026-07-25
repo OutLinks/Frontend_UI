@@ -188,4 +188,3 @@ export async function waitForJob<TResult>(id: string, signal?: AbortSignal): Pro
   }
   throw new Error(`Timed out waiting for job ${id}`);
 }
-
